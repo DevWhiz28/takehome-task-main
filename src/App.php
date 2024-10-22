@@ -2,29 +2,58 @@
 
 namespace App;
 
-// TODO: Improve the readability of this file through refactoring and documentation.
+// Load global configurations or dependencies
+require_once dirname(__DIR__) . '/globals.php';
 
-require_once dirname( __DIR__ ) . '/globals.php';
-
+/**
+ * App class handles article-related operations such as save, update, fetch, and list retrieval.
+ */
 class App {
 
-	public function save( $ttl, $bd ) {
-		error_log( "Saving article $ttl, success!" );
-		file_put_contents( $ttl, $bd );
-	}
+    /**
+     * Save an article to the specified file path.
+     *
+     * @param string $title The file path or title where the article is saved.
+     * @param string $body The content of the article.
+     * @return void
+     */
+    public function save($title, $body) {
+        error_log("Saving article $title, success!");
+        file_put_contents($title, $body);
+    }
 
-	public function update( $ttl, $bd ) {
-		$this->save( $ttl, $bd );
-	}
+    /**
+     * Update an existing article by calling the save method.
+     *
+     * @param string $title The file path or title where the article is saved.
+     * @param string $body The updated content of the article.
+     * @return void
+     */
+    public function update($title, $body) {
+        $this->save($title, $body);
+    }
 
-	public function fetch( $get ) {
-		$title = $get['title'] ?? null;
-		return is_array( $get ) ? file_get_contents( sprintf( 'articles/%s', $get['title'] ) ) :
-			file_get_contents( sprintf( 'articles/%s', $_GET['title'] ) );
-	}
+    /**
+     * Fetch the content of an article.
+     *
+     * @param array $get The GET parameters array which should contain the 'title' key.
+     * @return string The content of the requested article.
+     */
+    public function fetch($get) {
+        $title = $get['title'] ?? null;
+        if (!$title) {
+            return '';
+        }
+        return file_get_contents(sprintf('articles/%s', $title));
+    }
 
-	public function getListOfArticles() {
-		global $wgBaseArticlePath;
-		return array_diff( scandir( $wgBaseArticlePath ), [ '.', '..', '.DS_Store' ] );
-	}
+    /**
+     * Retrieve a list of all articles in the articles directory.
+     *
+     * @return array List of article filenames.
+     */
+    public function getListOfArticles() {
+        global $wgBaseArticlePath;
+        return array_diff(scandir($wgBaseArticlePath), ['.', '..', '.DS_Store']);
+    }
 }
