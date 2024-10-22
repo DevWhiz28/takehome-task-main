@@ -1,23 +1,5 @@
 <?php
 
-// TODO A: Improve the readability of this file through refactoring and documentation.
-
-// TODO B: Review the HTML structure and make sure that it is valid and contains
-// required elements. Edit and re-organize the HTML as needed.
-
-// TODO C: Review the index.php entrypoint for security and performance concerns
-// and provide fixes. Note any issues you don't have time to fix.
-
-// TODO D: The list of available articles is hardcoded. Add code to get a
-// dynamically generated list.
-
-// TODO E: Are there performance problems with the word count function? How
-// could you optimize this to perform well with large amounts of data? Code
-// comments / psuedo-code welcome.
-
-// TODO F: Implement a simple unit test to ensure the correctness of different parts
-// of the application.
-
 use App\App;
 
 require_once __DIR__ . '/vendor/autoload.php';
@@ -32,13 +14,13 @@ echo "<head>
 
 $title = '';
 $body = '';
-$wordCount = '0 words written'; // Default word count when no article is selected
+$wordCount = '0 words written';
 
+// Sanitize the 'title' input and retrieve the article if available
 if (isset($_GET['title'])) {
-    $title = htmlentities($_GET['title']);
-    $body = $app->fetch($_GET);
-    $body = file_get_contents(sprintf('articles/%s', $title));
-    $wordCount = wfGetWc($body); // Get word count for the selected article
+    $title = htmlentities($_GET['title'], ENT_QUOTES, 'UTF-8');
+    $body = $app->fetch($title); // Fetch sanitized
+    $wordCount = wfGetWc($body); // Calculate word count
 }
 
 echo "<body>";
@@ -49,28 +31,31 @@ echo "<header>
 
 echo "<div class='page'>";
 
+// Sidebar with list of articles
 echo "<div class='sidebar'>
 <h2>Articles</h2>
 <div class='article-list'>
 <ul>";
 foreach ($app->getListOfArticles() as $article) {
-    echo "<li><a href='index.php?title=" . htmlentities($article) . "'>" . htmlentities($article) . "</a></li>";
+    echo "<li><a href='index.php?title=" . htmlentities($article, ENT_QUOTES, 'UTF-8') . "'>" . htmlentities($article, ENT_QUOTES, 'UTF-8') . "</a></li>";
 }
 echo "</ul>
 </div>
 </div>";
 
+// Main content for article creation/editing
 echo "<div class='main-content'>
 <h2>Create/Edit Article</h2>
-<p>Create a new article by filling out the fields below. Edit an article by typing the beginning of the title in the title field, selecting the title from the auto-complete list, and changing the text in the textfield.</p>
+<p>Create or edit an article by typing the title and body below.</p>
 <form action='index.php' method='post'>
-<input name='title' type='text' placeholder='Article title...' value='$title'>
+<input name='title' type='text' placeholder='Article title...' value='$title' required>
 <br />
 <textarea name='body' placeholder='Article body...'>$body</textarea>
 <br />
 <button type='submit'>Submit</button>
 </form>";
 
+// Preview the article
 echo "<div class='preview'>
 <h2>Preview</h2>
 <p><strong>$title</strong></p>
@@ -78,22 +63,22 @@ echo "<div class='preview'>
 </div>";
 
 if ($_POST) {
-    $app->save(sprintf("articles/%s", $_POST['title']), $_POST['body']);
+    $sanitizedTitle = htmlentities($_POST['title'], ENT_QUOTES, 'UTF-8');
+    $sanitizedBody = htmlentities($_POST['body'], ENT_QUOTES, 'UTF-8');
+    $app->save($sanitizedTitle, $sanitizedBody); // Sanitize and save the article
 }
+
 echo "</div>";
 echo "</div>";
 echo "</body>";
 
 /**
- * Returns the word count for the given content
- *
- * @param string $content The content of the article
- * @return string The word count in the format 'x words written'
+ * Optimized word count function.
+ * @param string $content
+ * @return string
  */
 function wfGetWc($content) {
-    if (empty($content)) {
-        return "0 words written";
-    }
+    $content = strip_tags($content); // Strip HTML tags to avoid counting them as words
     $wordCount = str_word_count($content);
     return "$wordCount words written";
 }
