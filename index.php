@@ -32,56 +32,68 @@ echo "<head>
 
 $title = '';
 $body = '';
-if ( isset( $_GET['title'] ) ) {
-	$title = htmlentities( $_GET['title'] );
-	$body = $app->fetch( $_GET );
-	$body = file_get_contents( sprintf( 'articles/%s', $title ) );
+$wordCount = '0 words written'; // Default word count when no article is selected
+
+if (isset($_GET['title'])) {
+    $title = htmlentities($_GET['title']);
+    $body = $app->fetch($_GET);
+    $body = file_get_contents(sprintf('articles/%s', $title));
+    $wordCount = wfGetWc($body); // Get word count for the selected article
 }
 
-$wordCount = wfGetWc();
 echo "<body>";
-echo "<div id=header class=header>
-<a href='/'>Article editor</a><div>$wordCount</div>
-</div>";
+echo "<header>
+<a href='/'>Article Editor</a>
+<div class='word-count'>$wordCount</div>
+</header>";
+
 echo "<div class='page'>";
-echo "<div class='main'>";
-echo "<h2>Create/Edit Article</h2>
+
+echo "<div class='sidebar'>
+<h2>Articles</h2>
+<div class='article-list'>
+<ul>";
+foreach ($app->getListOfArticles() as $article) {
+    echo "<li><a href='index.php?title=" . htmlentities($article) . "'>" . htmlentities($article) . "</a></li>";
+}
+echo "</ul>
+</div>
+</div>";
+
+echo "<div class='main-content'>
+<h2>Create/Edit Article</h2>
 <p>Create a new article by filling out the fields below. Edit an article by typing the beginning of the title in the title field, selecting the title from the auto-complete list, and changing the text in the textfield.</p>
 <form action='index.php' method='post'>
-<input name='title' type='text' placeholder='Article title...' value=$title>
+<input name='title' type='text' placeholder='Article title...' value='$title'>
 <br />
-<textarea name='body' placeholder='Article body...' >$body</textarea>
+<textarea name='body' placeholder='Article body...'>$body</textarea>
 <br />
-<a class='submit-button' href='#' />Submit</a>
-<br />
-<h2>Preview</h2>
-$title\n\n
-$body
-<h2>Articles</h2>
-<ul>
-<li><a href='index.php?title=Foo'>Foo</a></li>
-</ul>
+<button type='submit'>Submit</button>
 </form>";
 
-if ( $_POST ) {
-	$app->save( sprintf( "articles/%s", $_POST['title'] ), $_POST['body'] );
+echo "<div class='preview'>
+<h2>Preview</h2>
+<p><strong>$title</strong></p>
+<p>$body</p>
+</div>";
+
+if ($_POST) {
+    $app->save(sprintf("articles/%s", $_POST['title']), $_POST['body']);
 }
 echo "</div>";
 echo "</div>";
-echo "</body";
+echo "</body>";
 
-function wfGetWc() {
-	global $wgBaseArticlePath;
-	$wgBaseArticlePath = 'articles/';
-	$wc = 0;
-	$dir = new DirectoryIterator( $wgBaseArticlePath );
-	foreach ( $dir as $fileinfo ) {
-		if ( $fileinfo->isDot() ) {
-			continue;
-		}
-		$c = file_get_contents( $wgBaseArticlePath . $fileinfo->getFilename() );
-		$ch = explode( " ", $c );
-		$wc += count( $ch );
-	}
-	return "$wc words written";
+/**
+ * Returns the word count for the given content
+ *
+ * @param string $content The content of the article
+ * @return string The word count in the format 'x words written'
+ */
+function wfGetWc($content) {
+    if (empty($content)) {
+        return "0 words written";
+    }
+    $wordCount = str_word_count($content);
+    return "$wordCount words written";
 }
